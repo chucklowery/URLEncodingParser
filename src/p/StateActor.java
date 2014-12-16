@@ -2,8 +2,6 @@ package p;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import static p.SetKey.ADD_TO_KEY;
 import static p.SetValue.ADD_TO_VALUE;
 import static p.State.KEY;
@@ -55,6 +53,23 @@ class SetValue implements StateActor {
     }
 }
 
+class ReplacePlusWithSpace implements StateActor {
+
+    public static final ReplacePlusWithSpace ADD_SPACE_TO_KEY = new ReplacePlusWithSpace(ADD_TO_KEY);
+    public static final ReplacePlusWithSpace ADD_SPACE_TO_VALUE = new ReplacePlusWithSpace(ADD_TO_VALUE);
+    StateActor actor;
+
+    public ReplacePlusWithSpace(StateActor actor) {
+        this.actor = actor;
+
+    }
+
+    @Override
+    public void takeAction(StateContext context, char state) {
+        actor.takeAction(context, ' ');
+    }
+}
+
 class SpecialDigitActor implements StateActor {
 
     StateActor onValue;
@@ -71,22 +86,36 @@ class SpecialDigitActor implements StateActor {
     @Override
     public void takeAction(StateContext context, char c) {
         if (context.special == null) {
+            checkOutOfBounds(c, context);
             context.special = c;
         } else {
-            onValue.takeAction(context, hexToChar(context.special, c));
+            checkOutOfBounds(c, context);
+            char token = (char) ((toValue(context.special) << 4) + toValue(c));
+            onValue.takeAction(context, token);
             context.currentState = state;
             context.special = null;
         }
     }
 
-    public static char hexToChar(char b1, char b2) {
-        int r = (b1 - '0') << 4;
-        if (b2 >= 'A') {
-            r += 10 + b2 - 'A';
-        } else {
-            r += b2 - '0';
+    private void checkOutOfBounds(char c, StateContext context) throws HexValueOutOfRange {
+        int value = toValue(c);
+        if (value > 15 || value < 0) {
+            throw new HexValueOutOfRange(context.position, c);
         }
-        return (char) r;
+    }
+
+    static char hexToChar(char b1, char b2) {
+        return (char) ((toValue(b1) << 4) + toValue(b2));
+    }
+
+    static int toValue(char c) {
+        if (c >= 'a') {
+            return 10 + c - 'a';
+        } else if (c >= 'A') {
+            return 10 + c - 'A';
+        } else {
+            return c - '0';
+        }
     }
 }
 
@@ -102,6 +131,7 @@ class ClearSpecialActor implements StateActor {
 }
 
 class BadStreamActor implements StateActor {
+
     public static final BadStreamActor BAD_STREAM = new BadStreamActor(StreamInvalidException.class);
     Class<StreamInvalidException> message;
 
@@ -128,4 +158,11 @@ class StreamInvalidException extends RuntimeException {
 
 class UnexpectedTokenFoundInStream extends RuntimeException {
 
+}
+
+class HexValueOutOfRange extends StreamInvalidException {
+
+    public HexValueOutOfRange(Integer index, Character c) {
+        super(index, c);
+    }
 }

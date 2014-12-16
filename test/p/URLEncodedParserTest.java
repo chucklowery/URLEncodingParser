@@ -12,9 +12,28 @@ import static org.junit.internal.matchers.IsCollectionContaining.hasItems;
 
 public class URLEncodedParserTest {
 
-    
-    
-    
+    @Test
+    public void givenValueButNoKey_expectNullKey() {
+        final String NAME = "=abcd";
+
+        Map<String, List<String>> pairs = context.parse(createStream(NAME), NAME.length());
+
+        assertThat(pairs.size(), is(1));
+        assertThat(pairs.containsKey(null), is(true));
+        assertThat(pairs.get(null), hasItem("abcd"));
+    }
+
+    @Test
+    public void givenMultipleValuesWithPlusToBeReplacedBySpaces() {
+        final String NAME = "a%2B+=1&a%2B+=2&a%2B+=3+++%2B";
+
+        Map<String, List<String>> pairs = context.parse(createStream(NAME), NAME.length());
+
+        assertThat(pairs.size(), is(1));
+        assertThat(pairs.containsKey("a+ "), is(true));
+        assertThat(pairs.get("a+ "), hasItems("1", "2", "3   +"));
+    }
+
     @Test
     public void givenMultipleValuesForTheSameKey_expectMultipleValues() {
         final String NAME = "a=1&a=2&a=3";
@@ -25,7 +44,18 @@ public class URLEncodedParserTest {
         assertThat(pairs.containsKey("a"), is(true));
         assertThat(pairs.get("a"), hasItems("1", "2", "3"));
     }
-    
+
+    @Test
+    public void givenPercentEncondingUpperAndLowerCase() {
+        final String NAME = "%3D%3d=%3D%3d";
+
+        Map<String, List<String>> pairs = context.parse(createStream(NAME), NAME.length());
+
+        assertThat(pairs.size(), is(1));
+        assertThat(pairs.containsKey("=="), is(true));
+        assertThat(pairs.get("=="), hasItem("=="));
+    }
+
     @Test
     public void givenNameWithSpcialCharacters_ExpectSpecailCharacterValue() {
         final String NAME = "%20%21%5D=%20%21%5D";
@@ -101,19 +131,42 @@ public class URLEncodedParserTest {
         assertThat(pairs.containsKey(NAME), is(true));
         assertThat(pairs.get(NAME), hasItem((String) null));
     }
-    
+
     @Test(expected = StreamInvalidException.class)
-    public void giveInvalidPecentValue() {
+    public void givenPercentFollowedByPercent() {
         final String NAME = "%%";
         context.parse(createStream(NAME), NAME.length());
     }
-    
+
+    @Test(expected = StreamInvalidException.class)
+    public void givenPercentFollowedByNonHexValue() {
+        final String NAME = "%kka";
+        context.parse(createStream(NAME), NAME.length());
+    }
+
+    @Test(expected = StreamInvalidException.class)
+    public void givenPercentFollowedByUpperBoundingValue() {
+        final String NAME = "%G";
+        context.parse(createStream(NAME), NAME.length());
+    }
+
+    @Test(expected = StreamInvalidException.class)
+    public void givenPercentFollowedByLowerValue() {
+        final String NAME = "%/";
+        context.parse(createStream(NAME), NAME.length());
+    }
+
+    @Test(expected = StreamInvalidException.class)
+    public void givenPercentFollowedByPlus_expectError() {
+        final String NAME = "%++";
+        context.parse(createStream(NAME), NAME.length());
+    }
+
     @Test(expected = UnexpectEndOfStream.class)
     public void giveStreamTooShort() {
         final String NAME = "a";
         context.parse(createStream(NAME), 10);
     }
-    
 
     URLEncodedParser context;
 

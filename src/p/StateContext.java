@@ -13,34 +13,34 @@ class StateContext {
     State currentState;
     HashMap<String, List<String>> pairs = new HashMap<>();
 
-    StringBuilder keyBuilder = new StringBuilder();
-    StringBuilder valueBuilder = new StringBuilder();
+    ByteBuffer keyBuilder = new ByteBuffer();
+    ByteBuffer valueBuilder = new ByteBuffer();
     Character special = null;
     int position = 0;
 
     void addToKeyToken(char value) {
-        keyBuilder.append(value);
+        keyBuilder.append((byte) value);
     }
 
     void addToValueToken(char value) {
-        valueBuilder.append(value);
+        valueBuilder.append((byte) value);
     }
 
     void takePair() {
-        if (keyBuilder.length() == 0) {
+        if (keyBuilder.length() == 0 && valueBuilder.length() == 0) {
             return;
         }
-        String value;
-        if (valueBuilder.length() > 0) {
-            value = valueBuilder.toString();
-            valueBuilder = new StringBuilder();
+        getValues(toValue(keyBuilder)).add(toValue(valueBuilder));
+        valueBuilder.reset();
+        keyBuilder.reset();
+    }
+
+    private String toValue(ByteBuffer builder) {
+        if (builder.length() == 0) {
+            return null;
         } else {
-            value = null;
+            return builder.toString();
         }
-        getValues(keyBuilder.toString()).add(value);
-
-        keyBuilder = new StringBuilder();
-
     }
 
     List<String> getValues(String key) {

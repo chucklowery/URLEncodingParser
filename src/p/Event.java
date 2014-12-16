@@ -5,7 +5,8 @@ enum Event {
     CHAR,
     EQUAL,
     AMPERSAND,
-    PERCENT;
+    PERCENT,
+    PLUS;
 
     public static Event toEvent(char c) {
         switch (c) {
@@ -15,6 +16,8 @@ enum Event {
                 return EQUAL;
             case '&':
                 return AMPERSAND;
+            case '+':
+                return PLUS;
             default:
                 return CHAR;
         }

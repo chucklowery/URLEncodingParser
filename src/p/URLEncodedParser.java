@@ -5,13 +5,15 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import static p.BadStreamActor.BAD_STREAM;
-import static p.ClearSpecialActor.CLEAR_SPECIAL;
 import static p.Event.AMPERSAND;
 import static p.Event.CHAR;
 import static p.Event.EQUAL;
 import static p.Event.PERCENT;
+import static p.Event.PLUS;
 import static p.Event.toEvent;
 import static p.NoOp.NO_OP;
+import static p.ReplacePlusWithSpace.ADD_SPACE_TO_KEY;
+import static p.ReplacePlusWithSpace.ADD_SPACE_TO_VALUE;
 import static p.SetKey.ADD_TO_KEY;
 import static p.SetValue.ADD_TO_VALUE;
 import static p.SpecialDigitActor.USE_SPECIAL_KEY;
@@ -37,21 +39,25 @@ public class URLEncodedParser {
         transition(KEY, AMPERSAND, KEY, TAKE_PAIR);
         transition(KEY, EQUAL, VALUE, NO_OP);
         transition(KEY, PERCENT, SPECIAL_KEY, NO_OP);
+        transition(KEY, PLUS, KEY, ADD_SPACE_TO_KEY);
 
         transition(VALUE, CHAR, VALUE, ADD_TO_VALUE);
         transition(VALUE, EQUAL, VALUE, ADD_TO_VALUE);
         transition(VALUE, AMPERSAND, KEY, TAKE_PAIR);
         transition(VALUE, PERCENT, SPECIAL_VALUE, NO_OP);
+        transition(VALUE, PLUS, VALUE, ADD_SPACE_TO_VALUE);
 
         transition(SPECIAL_KEY, CHAR, SPECIAL_KEY, USE_SPECIAL_KEY);
         transition(SPECIAL_KEY, PERCENT, SPECIAL_KEY, BAD_STREAM);
         transition(SPECIAL_KEY, AMPERSAND, SPECIAL_KEY, BAD_STREAM);
         transition(SPECIAL_KEY, EQUAL, SPECIAL_KEY, BAD_STREAM);
+        transition(SPECIAL_KEY, PLUS, SPECIAL_KEY, BAD_STREAM);
 
         transition(SPECIAL_VALUE, CHAR, SPECIAL_VALUE, USE_SPECIAL_VALUE);
         transition(SPECIAL_VALUE, PERCENT, SPECIAL_VALUE, BAD_STREAM);
         transition(SPECIAL_VALUE, AMPERSAND, SPECIAL_VALUE, BAD_STREAM);
         transition(SPECIAL_VALUE, EQUAL, SPECIAL_VALUE, BAD_STREAM);
+        transition(SPECIAL_VALUE, PLUS, SPECIAL_VALUE, BAD_STREAM);
 
     }
 
