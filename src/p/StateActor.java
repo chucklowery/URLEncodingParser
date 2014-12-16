@@ -7,9 +7,9 @@ import static p.SetValue.ADD_TO_VALUE;
 import static p.State.KEY;
 import static p.State.VALUE;
 
-public interface StateActor {
+interface StateActor {
 
-    public void takeAction(StateContext context, char state);
+    void takeAction(StateContext context, char state);
 
 }
 
