@@ -2,30 +2,30 @@ package p;
 
 import static java.util.Arrays.copyOf;
 
-public class ByteBuffer {
+public class CharBuffer {
 
-    byte[] bytes;
+    char[] chars;
     int chunkSize = 32;
     int mark = 0;
 
-    public void append(byte b) {
+    public void append(char b) {
         ensureAdditionalSpace(1);
-        bytes[mark++] = b;
+        chars[mark++] = b;
     }
 
-    public void append(byte[] bs) {
+    public void append(char[] bs) {
         ensureAdditionalSpace(bs.length);
 
-        System.arraycopy(bs, 0, bytes, mark, bs.length);
+        System.arraycopy(bs, 0, chars, mark, bs.length);
         mark += bs.length;
     }
 
     protected void ensureAdditionalSpace(int space) {
-        if (bytes == null) {
-            bytes = new byte[nextSize(space)];
+        if (chars == null) {
+            chars = new char[nextSize(space)];
         } else {
             if (getBufferSize() < space + mark) {
-                bytes = copyOf(bytes, nextSize(space));
+                chars = copyOf(chars, nextSize(space));
             }
         }
     }
@@ -35,11 +35,11 @@ public class ByteBuffer {
     }
 
     private int getBufferSize() {
-        return bytes == null ? 0 : bytes.length;
+        return chars == null ? 0 : chars.length;
     }
 
-    public byte[] toArray() {
-        return copyOf(bytes, mark);
+    public char[] toArray() {
+        return copyOf(chars, mark);
     }
 
     public String toString() {

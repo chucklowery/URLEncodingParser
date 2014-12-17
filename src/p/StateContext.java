@@ -12,18 +12,17 @@ class StateContext {
 
     State currentState;
     HashMap<String, List<String>> pairs = new HashMap<>();
-
-    ByteBuffer keyBuilder = new ByteBuffer();
-    ByteBuffer valueBuilder = new ByteBuffer();
+    CharBuffer keyBuilder = new CharBuffer();
+    CharBuffer valueBuilder = new CharBuffer();
     Character special = null;
     int position = 0;
 
     void addToKeyToken(char value) {
-        keyBuilder.append((byte) value);
+        keyBuilder.append(value);
     }
 
     void addToValueToken(char value) {
-        valueBuilder.append((byte) value);
+        valueBuilder.append(value);
     }
 
     void takePair() {
@@ -35,7 +34,7 @@ class StateContext {
         keyBuilder.reset();
     }
 
-    private String toValue(ByteBuffer builder) {
+    private String toValue(CharBuffer builder) {
         if (builder.length() == 0) {
             return null;
         } else {

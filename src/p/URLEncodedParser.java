@@ -2,6 +2,8 @@ package p;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import static p.BadStreamActor.BAD_STREAM;
@@ -27,7 +29,7 @@ import static p.TakePairActor.TAKE_PAIR;
 /**
  * Thread safe URL encoded key=value parser.
  *
- * @author Charles H.Lowery <chuck.lowery @ gmail.com>
+ * @author Charles H. Lowery <chuck.lowery @ gmail.com>
  */
 public class URLEncodedParser {
 
@@ -35,6 +37,7 @@ public class URLEncodedParser {
 
     static {
         transitions = new Transition[State.values().length][Event.values().length];
+
         transition(KEY, CHAR, KEY, ADD_TO_KEY);
         transition(KEY, AMPERSAND, KEY, TAKE_PAIR);
         transition(KEY, EQUAL, VALUE, NO_OP);
@@ -58,35 +61,21 @@ public class URLEncodedParser {
         transition(SPECIAL_VALUE, AMPERSAND, SPECIAL_VALUE, BAD_STREAM);
         transition(SPECIAL_VALUE, EQUAL, SPECIAL_VALUE, BAD_STREAM);
         transition(SPECIAL_VALUE, PLUS, SPECIAL_VALUE, BAD_STREAM);
-
     }
 
-    public URLEncodedParser() {
-
-    }
-
-    public Map<String, List<String>> parse(InputStream stream, int length) {
+    public Map<String, List<String>> parse(InputStream rawStream, int length) {
+        final InputStreamReader stream = new InputStreamReader(rawStream, StandardCharsets.UTF_8);
         StateContext context = new StateContext();
-
-        for (context.position = 0; context.position < length; context.position++) {
-            int rawTokem = read(stream);
-            checkForInvalidEOS(rawTokem);
-
+        int rawTokem;
+        for (context.position = 0; context.position < length && (rawTokem = read(stream)) > -1; context.position++) {
             char token = (char) rawTokem;
             transitions[context.currentState.ordinal()][toEvent(token).ordinal()].transition(context, token);
         }
         context.takePair();
-
         return context.pairs;
     }
 
-    private void checkForInvalidEOS(int rawTokem) throws UnexpectEndOfStream {
-        if (rawTokem == -1) {
-            throw new UnexpectEndOfStream();
-        }
-    }
-
-    private int read(InputStream stream) {
+    private int read(InputStreamReader stream) {
         try {
             return stream.read();
         } catch (IOException ex) {
