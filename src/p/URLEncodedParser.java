@@ -58,7 +58,7 @@ public class URLEncodedParser {
 
     private static boolean scanForToken(final InputStreamReader stream, StateContext context) throws StreamInvalidException {
         int raw = read(stream);
-        if(raw == -1) {
+        if (raw == -1) {
             return false;
         }
         context.token = (char) raw;
@@ -117,10 +117,6 @@ public class URLEncodedParser {
         if (value > 15 || value < 0) {
             throw new HexValueOutOfRange(context.position, c);
         }
-    }
-
-    private static char hexToChar(char b1, char b2) {
-        return (char) ((toHexValue(b1) << 4) + toHexValue(b2));
     }
 
     private static int toHexValue(char c) {
