@@ -6,32 +6,48 @@ import java.util.List;
 
 class StateContext {
 
-    public StateContext() {
-        currentState = State.KEY;
-    }
-
     State currentState;
+    State nextState;
+    
+    CharBuffer currentBuffer;
+
     HashMap<String, List<String>> pairs = new HashMap<>();
-    CharBuffer keyBuilder = new CharBuffer();
-    CharBuffer valueBuilder = new CharBuffer();
+
+    CharBuffer keyBuffer;
+    CharBuffer valueBuilder;
     Character special = null;
+    
+    State specialState;
+    
     int position = 0;
 
-    void addToKeyToken(char value) {
-        keyBuilder.append(value);
+    public StateContext() {
+        currentState = State.KEY;
+        keyBuffer = new CharBuffer();
+        valueBuilder = new CharBuffer();
+        currentBuffer = keyBuffer;
+    }
+
+    void addToken(char value) {
+        currentBuffer.append(value);
     }
 
     void addToValueToken(char value) {
         valueBuilder.append(value);
     }
 
+    void takeKey() {
+        currentBuffer = valueBuilder;
+    }
+
     void takePair() {
-        if (keyBuilder.length() == 0 && valueBuilder.length() == 0) {
+        if (keyBuffer.length() == 0 && valueBuilder.length() == 0) {
             return;
         }
-        getValues(toValue(keyBuilder)).add(toValue(valueBuilder));
+        getValues(toValue(keyBuffer)).add(toValue(valueBuilder));
         valueBuilder.reset();
-        keyBuilder.reset();
+        keyBuffer.reset();
+        currentBuffer = keyBuffer;
     }
 
     private String toValue(CharBuffer builder) {

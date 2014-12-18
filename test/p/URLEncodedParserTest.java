@@ -1,6 +1,7 @@
 package p;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import static org.hamcrest.core.Is.is;
@@ -11,6 +12,16 @@ import static org.junit.internal.matchers.IsCollectionContaining.hasItem;
 import static org.junit.internal.matchers.IsCollectionContaining.hasItems;
 
 public class URLEncodedParserTest {
+
+    @Test
+    public void givenMultibyteCharactersInName_expectMultibyteCharactersInKey() {
+        final String NAME = "Āき";
+
+        Map<String, List<String>> pairs = context.parse(createStream(NAME), NAME.length());
+
+        assertThat(pairs.size(), is(1));
+        assertThat(pairs.containsKey("Āき"), is(true));
+    }
 
     @Test
     public void givenValueButNoKey_expectNullKey() {
@@ -162,12 +173,6 @@ public class URLEncodedParserTest {
         context.parse(createStream(NAME), NAME.length());
     }
 
-    @Test(expected = UnexpectEndOfStream.class)
-    public void giveStreamTooShort() {
-        final String NAME = "a";
-        context.parse(createStream(NAME), 10);
-    }
-
     URLEncodedParser context;
 
     @Before
@@ -177,7 +182,7 @@ public class URLEncodedParserTest {
     }
 
     private ByteArrayInputStream createStream(final String NAME) {
-        ByteArrayInputStream stream = new ByteArrayInputStream(NAME.getBytes());
+        ByteArrayInputStream stream = new ByteArrayInputStream(NAME.getBytes(StandardCharsets.UTF_8));
         return stream;
     }
 

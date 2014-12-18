@@ -2,15 +2,21 @@ package p;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import static p.SetKey.ADD_TO_KEY;
-import static p.SetValue.ADD_TO_VALUE;
-import static p.State.KEY;
-import static p.State.VALUE;
 
 interface StateActor {
 
     void takeAction(StateContext context, char state);
 
+}
+
+class EnterHexValue implements StateActor {
+
+    public static final EnterHexValue ENTER_HEX = new EnterHexValue();
+
+    @Override
+    public void takeAction(StateContext context, char c) {
+        context.specialState = context.currentState;
+    }
 }
 
 class TakePairActor implements StateActor {
@@ -23,66 +29,38 @@ class TakePairActor implements StateActor {
     }
 }
 
-class NoOp implements StateActor {
-
-    public static final NoOp NO_OP = new NoOp();
-
+class TakeKey implements StateActor {
+    public static final TakeKey TAKE_KEY = new TakeKey();
+    
     @Override
-    public void takeAction(StateContext context, char state) {
+    public void takeAction(StateContext context, char c) {
+        context.takeKey();
     }
-
 }
 
-class SetKey implements StateActor {
+class AddToken implements StateActor {
 
-    public static final SetKey ADD_TO_KEY = new SetKey();
+    public static final AddToken ADD_CHAR = new AddToken();
 
     @Override
     public void takeAction(StateContext context, char c) {
-        context.addToKeyToken(c);
+        context.addToken(c);
     }
 }
 
-class SetValue implements StateActor {
+class AddSpace implements StateActor {
 
-    public static final SetValue ADD_TO_VALUE = new SetValue();
-
-    @Override
-    public void takeAction(StateContext context, char c) {
-        context.addToValueToken(c);
-    }
-}
-
-class ReplacePlusWithSpace implements StateActor {
-
-    public static final ReplacePlusWithSpace ADD_SPACE_TO_KEY = new ReplacePlusWithSpace(ADD_TO_KEY);
-    public static final ReplacePlusWithSpace ADD_SPACE_TO_VALUE = new ReplacePlusWithSpace(ADD_TO_VALUE);
-    StateActor actor;
-
-    public ReplacePlusWithSpace(StateActor actor) {
-        this.actor = actor;
-
-    }
+    public static final AddSpace ADD_SPACE = new AddSpace();
 
     @Override
     public void takeAction(StateContext context, char state) {
-        actor.takeAction(context, ' ');
+        context.addToken(' ');
     }
 }
 
-class SpecialDigitActor implements StateActor {
-
-    StateActor onValue;
-    State state;
-
-    public SpecialDigitActor(StateActor onValue, State state) {
-        this.onValue = onValue;
-        this.state = state;
-    }
-
-    public static final SpecialDigitActor USE_SPECIAL_KEY = new SpecialDigitActor(ADD_TO_KEY, KEY);
-    public static final SpecialDigitActor USE_SPECIAL_VALUE = new SpecialDigitActor(ADD_TO_VALUE, VALUE);
-
+class AddHexValueActor implements StateActor {
+    public static final AddHexValueActor ADD_HEX_DIGIT = new AddHexValueActor();
+    
     @Override
     public void takeAction(StateContext context, char c) {
         if (context.special == null) {
@@ -91,8 +69,8 @@ class SpecialDigitActor implements StateActor {
         } else {
             checkOutOfBounds(c, context);
             char token = (char) ((toValue(context.special) << 4) + toValue(c));
-            onValue.takeAction(context, token);
-            context.currentState = state;
+            context.addToken(token);
+            context.nextState = context.specialState;
             context.special = null;
         }
     }
@@ -154,10 +132,6 @@ class StreamInvalidException extends RuntimeException {
     public StreamInvalidException(Integer index, Character c) {
         super("Unexpected token found in stream @" + index + " found:" + c);
     }
-}
-
-class UnexpectedTokenFoundInStream extends RuntimeException {
-
 }
 
 class HexValueOutOfRange extends StreamInvalidException {

@@ -4,6 +4,5 @@ enum State {
 
     KEY,
     VALUE,
-    SPECIAL_KEY,
-    SPECIAL_VALUE
+    HEX_VALUE
 }

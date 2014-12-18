@@ -11,7 +11,7 @@ class Transition {
     }
 
     void transition(StateContext context, char value) {
-        context.currentState = nextState;
+        context.nextState = nextState;
         actor.takeAction(context, value);
     }
 }

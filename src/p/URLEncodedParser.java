@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import static p.AddHexValueActor.ADD_HEX_DIGIT;
+import static p.AddToken.ADD_CHAR;
 import static p.BadStreamActor.BAD_STREAM;
 import static p.Event.AMPERSAND;
 import static p.Event.CHAR;
@@ -13,17 +15,12 @@ import static p.Event.EQUAL;
 import static p.Event.PERCENT;
 import static p.Event.PLUS;
 import static p.Event.toEvent;
-import static p.NoOp.NO_OP;
-import static p.ReplacePlusWithSpace.ADD_SPACE_TO_KEY;
-import static p.ReplacePlusWithSpace.ADD_SPACE_TO_VALUE;
-import static p.SetKey.ADD_TO_KEY;
-import static p.SetValue.ADD_TO_VALUE;
-import static p.SpecialDigitActor.USE_SPECIAL_KEY;
-import static p.SpecialDigitActor.USE_SPECIAL_VALUE;
+import static p.AddSpace.ADD_SPACE;
+import static p.EnterHexValue.ENTER_HEX;
 import static p.State.KEY;
-import static p.State.SPECIAL_KEY;
-import static p.State.SPECIAL_VALUE;
+import static p.State.HEX_VALUE;
 import static p.State.VALUE;
+import static p.TakeKey.TAKE_KEY;
 import static p.TakePairActor.TAKE_PAIR;
 
 /**
@@ -38,29 +35,23 @@ public class URLEncodedParser {
     static {
         transitions = new Transition[State.values().length][Event.values().length];
 
-        transition(KEY, CHAR, KEY, ADD_TO_KEY);
+        transition(KEY, CHAR, KEY, ADD_CHAR);
         transition(KEY, AMPERSAND, KEY, TAKE_PAIR);
-        transition(KEY, EQUAL, VALUE, NO_OP);
-        transition(KEY, PERCENT, SPECIAL_KEY, NO_OP);
-        transition(KEY, PLUS, KEY, ADD_SPACE_TO_KEY);
+        transition(KEY, EQUAL, VALUE, TAKE_KEY);
+        transition(KEY, PERCENT, HEX_VALUE, ENTER_HEX);
+        transition(KEY, PLUS, KEY, ADD_SPACE);
 
-        transition(VALUE, CHAR, VALUE, ADD_TO_VALUE);
-        transition(VALUE, EQUAL, VALUE, ADD_TO_VALUE);
+        transition(VALUE, CHAR, VALUE, ADD_CHAR);
+        transition(VALUE, EQUAL, VALUE, ADD_CHAR);
         transition(VALUE, AMPERSAND, KEY, TAKE_PAIR);
-        transition(VALUE, PERCENT, SPECIAL_VALUE, NO_OP);
-        transition(VALUE, PLUS, VALUE, ADD_SPACE_TO_VALUE);
+        transition(VALUE, PERCENT, HEX_VALUE, ENTER_HEX);
+        transition(VALUE, PLUS, VALUE, ADD_SPACE);
 
-        transition(SPECIAL_KEY, CHAR, SPECIAL_KEY, USE_SPECIAL_KEY);
-        transition(SPECIAL_KEY, PERCENT, SPECIAL_KEY, BAD_STREAM);
-        transition(SPECIAL_KEY, AMPERSAND, SPECIAL_KEY, BAD_STREAM);
-        transition(SPECIAL_KEY, EQUAL, SPECIAL_KEY, BAD_STREAM);
-        transition(SPECIAL_KEY, PLUS, SPECIAL_KEY, BAD_STREAM);
-
-        transition(SPECIAL_VALUE, CHAR, SPECIAL_VALUE, USE_SPECIAL_VALUE);
-        transition(SPECIAL_VALUE, PERCENT, SPECIAL_VALUE, BAD_STREAM);
-        transition(SPECIAL_VALUE, AMPERSAND, SPECIAL_VALUE, BAD_STREAM);
-        transition(SPECIAL_VALUE, EQUAL, SPECIAL_VALUE, BAD_STREAM);
-        transition(SPECIAL_VALUE, PLUS, SPECIAL_VALUE, BAD_STREAM);
+        transition(HEX_VALUE, CHAR, HEX_VALUE, ADD_HEX_DIGIT);
+        transition(HEX_VALUE, PERCENT, HEX_VALUE, BAD_STREAM);
+        transition(HEX_VALUE, AMPERSAND, HEX_VALUE, BAD_STREAM);
+        transition(HEX_VALUE, EQUAL, HEX_VALUE, BAD_STREAM);
+        transition(HEX_VALUE, PLUS, HEX_VALUE, BAD_STREAM);
     }
 
     public Map<String, List<String>> parse(InputStream rawStream, int length) {
@@ -69,7 +60,9 @@ public class URLEncodedParser {
         int rawTokem;
         for (context.position = 0; context.position < length && (rawTokem = read(stream)) > -1; context.position++) {
             char token = (char) rawTokem;
+            
             transitions[context.currentState.ordinal()][toEvent(token).ordinal()].transition(context, token);
+            context.currentState = context.nextState;
         }
         context.takePair();
         return context.pairs;
