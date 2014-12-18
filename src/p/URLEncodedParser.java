@@ -54,7 +54,7 @@ public class URLEncodedParser {
         return context.pairs;
     }
 
-    private void takeToken(int rawTokem, final InputStreamReader stream, StateContext context) throws StreamInvalidException {
+    private static void takeToken(int rawTokem, final InputStreamReader stream, StateContext context) throws StreamInvalidException {
         char token = (char) rawTokem;
         Event event;
         switch (token) {
@@ -79,7 +79,7 @@ public class URLEncodedParser {
         findTransition(context.currentState, event).transition(context, token);
     }
 
-    private char parseHex(final InputStreamReader stream, StateContext context) throws StreamInvalidException, HexValueOutOfRange {
+    private static char parseHex(final InputStreamReader stream, StateContext context) throws StreamInvalidException, HexValueOutOfRange {
         int hex1 = read(stream);
         int hex2 = read(stream);
         if (hex1 == -1 || hex2 == -1) {
@@ -91,11 +91,11 @@ public class URLEncodedParser {
         return (char) ((toHexValue((char) hex1) << 4) + toHexValue((char) hex2));
     }
 
-    private Transition findTransition(State state, Event event) {
+    private static Transition findTransition(State state, Event event) {
         return transitions[state.ordinal()][event.ordinal()];
     }
 
-    private int read(InputStreamReader stream) {
+    private static int read(InputStreamReader stream) {
         try {
             return stream.read();
         } catch (IOException ex) {
@@ -107,18 +107,18 @@ public class URLEncodedParser {
         transitions[given.ordinal()][when.ordinal()] = new Transition(then, action);
     }
 
-    private void checkOutOfBounds(char c, StateContext context) throws HexValueOutOfRange {
+    private static void checkOutOfBounds(char c, StateContext context) throws HexValueOutOfRange {
         int value = toHexValue(c);
         if (value > 15 || value < 0) {
             throw new HexValueOutOfRange(context.position, c);
         }
     }
 
-    static char hexToChar(char b1, char b2) {
+    private static char hexToChar(char b1, char b2) {
         return (char) ((toHexValue(b1) << 4) + toHexValue(b2));
     }
 
-    static int toHexValue(char c) {
+    private static int toHexValue(char c) {
         if (c >= 'a') {
             return 10 + c - 'a';
         } else if (c >= 'A') {
