@@ -46,37 +46,43 @@ public class URLEncodedParser {
     public Map<String, List<String>> parse(InputStream rawStream, int length) {
         final InputStreamReader stream = new InputStreamReader(rawStream, StandardCharsets.UTF_8);
         StateContext context = new StateContext();
-        int rawTokem;
-        for (context.position = 0; context.position < length && (rawTokem = read(stream)) > -1; context.position++) {
-            takeToken(rawTokem, stream, context);
+        for (context.position = 0; context.position < length; context.position++) {
+            if (!scanForToken(stream, context)) {
+                break;
+            }
+            findTransition(context.currentState, context.event).transition(context);
         }
         context.takePair();
         return context.pairs;
     }
 
-    private static void takeToken(int rawTokem, final InputStreamReader stream, StateContext context) throws StreamInvalidException {
-        char token = (char) rawTokem;
-        Event event;
-        switch (token) {
+    private static boolean scanForToken(final InputStreamReader stream, StateContext context) throws StreamInvalidException {
+        int raw = read(stream);
+        if(raw == -1) {
+            return false;
+        }
+        context.token = (char) raw;
+
+        switch (context.token) {
             case '%':
-                event = PERCENT;
-                token = parseHex(stream, context);
+                context.event = PERCENT;
+                context.token = parseHex(stream, context);
+                context.position += 2;
                 break;
             case '=':
-                event = EQUAL;
+                context.event = EQUAL;
                 break;
             case '&':
-                event = AMPERSAND;
+                context.event = AMPERSAND;
                 break;
             case '+':
-                event = PLUS;
+                context.event = PLUS;
                 break;
             default:
-                event = CHAR;
+                context.event = CHAR;
                 break;
         }
-        
-        findTransition(context.currentState, event).transition(context, token);
+        return true;
     }
 
     private static char parseHex(final InputStreamReader stream, StateContext context) throws StreamInvalidException, HexValueOutOfRange {
@@ -87,7 +93,6 @@ public class URLEncodedParser {
         }
         checkOutOfBounds((char) hex1, context);
         checkOutOfBounds((char) hex2, context);
-        context.position += 2;
         return (char) ((toHexValue((char) hex1) << 4) + toHexValue((char) hex2));
     }
 

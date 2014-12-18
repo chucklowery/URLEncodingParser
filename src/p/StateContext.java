@@ -7,6 +7,8 @@ import java.util.List;
 class StateContext {
 
     State currentState;
+    char token;
+    Event event;
     CharBuffer currentBuffer;
 
     HashMap<String, List<String>> pairs = new HashMap<>();

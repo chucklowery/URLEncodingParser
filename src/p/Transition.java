@@ -10,8 +10,8 @@ class Transition {
         this.actor = action;
     }
 
-    void transition(StateContext context, char value) {
-        actor.takeAction(context, value);
+    void transition(StateContext context) {
+        actor.takeAction(context, context.token);
         context.currentState = nextState;
     }
 }
