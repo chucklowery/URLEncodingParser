@@ -66,7 +66,7 @@ public class URLEncodedParser {
         switch (context.token) {
             case '%':
                 context.event = PERCENT;
-                context.token = parseHex(stream, context);
+                context.token = scanForHexValue(stream, context);
                 context.position += 2;
                 break;
             case '=':
@@ -85,7 +85,7 @@ public class URLEncodedParser {
         return true;
     }
 
-    private static char parseHex(final InputStreamReader stream, StateContext context) throws StreamInvalidException, HexValueOutOfRange {
+    private static char scanForHexValue(final InputStreamReader stream, StateContext context) throws StreamInvalidException, HexValueOutOfRange {
         int hex1 = read(stream);
         int hex2 = read(stream);
         if (hex1 == -1 || hex2 == -1) {
