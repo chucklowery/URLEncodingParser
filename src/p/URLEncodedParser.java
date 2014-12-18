@@ -48,31 +48,35 @@ public class URLEncodedParser {
         StateContext context = new StateContext();
         int rawTokem;
         for (context.position = 0; context.position < length && (rawTokem = read(stream)) > -1; context.position++) {
-            char token = (char) rawTokem;
-            Event event;
-            switch (token) {
-                case '%':
-                    event = PERCENT;
-                    token = parseHex(stream, context);
-                    break;
-                case '=':
-                    event = EQUAL;
-                    break;
-                case '&':
-                    event = AMPERSAND;
-                    break;
-                case '+':
-                    event = PLUS;
-                    break;
-                default:
-                    event = CHAR;
-                    break;
-            }
-
-            findTransition(context, event).transition(context, token);
+            takeToken(rawTokem, stream, context);
         }
         context.takePair();
         return context.pairs;
+    }
+
+    private void takeToken(int rawTokem, final InputStreamReader stream, StateContext context) throws StreamInvalidException {
+        char token = (char) rawTokem;
+        Event event;
+        switch (token) {
+            case '%':
+                event = PERCENT;
+                token = parseHex(stream, context);
+                break;
+            case '=':
+                event = EQUAL;
+                break;
+            case '&':
+                event = AMPERSAND;
+                break;
+            case '+':
+                event = PLUS;
+                break;
+            default:
+                event = CHAR;
+                break;
+        }
+        
+        findTransition(context.currentState, event).transition(context, token);
     }
 
     private char parseHex(final InputStreamReader stream, StateContext context) throws StreamInvalidException, HexValueOutOfRange {
@@ -87,9 +91,8 @@ public class URLEncodedParser {
         return (char) ((toHexValue((char) hex1) << 4) + toHexValue((char) hex2));
     }
 
-    private Transition findTransition(StateContext context, Event event) {
-        Transition transition = transitions[context.currentState.ordinal()][event.ordinal()];
-        return transition;
+    private Transition findTransition(State state, Event event) {
+        return transitions[state.ordinal()][event.ordinal()];
     }
 
     private int read(InputStreamReader stream) {
