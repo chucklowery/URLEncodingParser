@@ -7,18 +7,13 @@ import java.util.List;
 class StateContext {
 
     State currentState;
-    State nextState;
-    
     CharBuffer currentBuffer;
 
     HashMap<String, List<String>> pairs = new HashMap<>();
 
     CharBuffer keyBuffer;
     CharBuffer valueBuilder;
-    Character special = null;
-    
-    State specialState;
-    
+
     int position = 0;
 
     public StateContext() {
@@ -30,10 +25,6 @@ class StateContext {
 
     void addToken(char value) {
         currentBuffer.append(value);
-    }
-
-    void addToValueToken(char value) {
-        valueBuilder.append(value);
     }
 
     void takeKey() {

@@ -6,19 +6,14 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import static p.AddHexValueActor.ADD_HEX_DIGIT;
+import static p.AddSpace.ADD_SPACE;
 import static p.AddToken.ADD_CHAR;
-import static p.BadStreamActor.BAD_STREAM;
 import static p.Event.AMPERSAND;
 import static p.Event.CHAR;
 import static p.Event.EQUAL;
 import static p.Event.PERCENT;
 import static p.Event.PLUS;
-import static p.Event.toEvent;
-import static p.AddSpace.ADD_SPACE;
-import static p.EnterHexValue.ENTER_HEX;
 import static p.State.KEY;
-import static p.State.HEX_VALUE;
 import static p.State.VALUE;
 import static p.TakeKey.TAKE_KEY;
 import static p.TakePairActor.TAKE_PAIR;
@@ -38,20 +33,14 @@ public class URLEncodedParser {
         transition(KEY, CHAR, KEY, ADD_CHAR);
         transition(KEY, AMPERSAND, KEY, TAKE_PAIR);
         transition(KEY, EQUAL, VALUE, TAKE_KEY);
-        transition(KEY, PERCENT, HEX_VALUE, ENTER_HEX);
+        transition(KEY, PERCENT, KEY, ADD_CHAR);
         transition(KEY, PLUS, KEY, ADD_SPACE);
 
         transition(VALUE, CHAR, VALUE, ADD_CHAR);
         transition(VALUE, EQUAL, VALUE, ADD_CHAR);
         transition(VALUE, AMPERSAND, KEY, TAKE_PAIR);
-        transition(VALUE, PERCENT, HEX_VALUE, ENTER_HEX);
+        transition(VALUE, PERCENT, VALUE, ADD_CHAR);
         transition(VALUE, PLUS, VALUE, ADD_SPACE);
-
-        transition(HEX_VALUE, CHAR, HEX_VALUE, ADD_HEX_DIGIT);
-        transition(HEX_VALUE, PERCENT, HEX_VALUE, BAD_STREAM);
-        transition(HEX_VALUE, AMPERSAND, HEX_VALUE, BAD_STREAM);
-        transition(HEX_VALUE, EQUAL, HEX_VALUE, BAD_STREAM);
-        transition(HEX_VALUE, PLUS, HEX_VALUE, BAD_STREAM);
     }
 
     public Map<String, List<String>> parse(InputStream rawStream, int length) {
@@ -60,12 +49,47 @@ public class URLEncodedParser {
         int rawTokem;
         for (context.position = 0; context.position < length && (rawTokem = read(stream)) > -1; context.position++) {
             char token = (char) rawTokem;
-            
-            transitions[context.currentState.ordinal()][toEvent(token).ordinal()].transition(context, token);
-            context.currentState = context.nextState;
+            Event event;
+            switch (token) {
+                case '%':
+                    event = PERCENT;
+                    token = parseHex(stream, context);
+                    break;
+                case '=':
+                    event = EQUAL;
+                    break;
+                case '&':
+                    event = AMPERSAND;
+                    break;
+                case '+':
+                    event = PLUS;
+                    break;
+                default:
+                    event = CHAR;
+                    break;
+            }
+
+            findTransition(context, event).transition(context, token);
         }
         context.takePair();
         return context.pairs;
+    }
+
+    private char parseHex(final InputStreamReader stream, StateContext context) throws StreamInvalidException, HexValueOutOfRange {
+        int hex1 = read(stream);
+        int hex2 = read(stream);
+        if (hex1 == -1 || hex2 == -1) {
+            throw new StreamInvalidException(context.position, '%');
+        }
+        checkOutOfBounds((char) hex1, context);
+        checkOutOfBounds((char) hex2, context);
+        context.position += 2;
+        return (char) ((toHexValue((char) hex1) << 4) + toHexValue((char) hex2));
+    }
+
+    private Transition findTransition(StateContext context, Event event) {
+        Transition transition = transitions[context.currentState.ordinal()][event.ordinal()];
+        return transition;
     }
 
     private int read(InputStreamReader stream) {
@@ -78,6 +102,27 @@ public class URLEncodedParser {
 
     private static void transition(State given, Event when, State then, StateActor action) {
         transitions[given.ordinal()][when.ordinal()] = new Transition(then, action);
+    }
+
+    private void checkOutOfBounds(char c, StateContext context) throws HexValueOutOfRange {
+        int value = toHexValue(c);
+        if (value > 15 || value < 0) {
+            throw new HexValueOutOfRange(context.position, c);
+        }
+    }
+
+    static char hexToChar(char b1, char b2) {
+        return (char) ((toHexValue(b1) << 4) + toHexValue(b2));
+    }
+
+    static int toHexValue(char c) {
+        if (c >= 'a') {
+            return 10 + c - 'a';
+        } else if (c >= 'A') {
+            return 10 + c - 'A';
+        } else {
+            return c - '0';
+        }
     }
 }
 
