@@ -3,6 +3,10 @@ nbproject
 build
 build.xml
 
+#gitstuff
+.gitignore
+.gitattributes
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
