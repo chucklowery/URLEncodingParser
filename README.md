@@ -9,4 +9,5 @@ in order to protect the Application. This interface is prepared for this outcome
  
 The mechanism is implemented using a state pattern and is thread safe.
 
+[WillEncoding EBNF](willencoding.ebnf)
 
