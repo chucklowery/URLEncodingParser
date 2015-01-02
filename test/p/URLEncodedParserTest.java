@@ -57,7 +57,7 @@ public class URLEncodedParserTest {
     }
 
     @Test
-    public void givenPercentEncondingUpperAndLowerCase() {
+    public void givenPercentEncodingUpperAndLowerCase_expectEncodedValues() {
         final String NAME = "%3D%3d=%3D%3d";
 
         Map<String, List<String>> pairs = context.parse(createStream(NAME), NAME.length());
@@ -68,7 +68,7 @@ public class URLEncodedParserTest {
     }
 
     @Test
-    public void givenNameWithSpcialCharacters_ExpectSpecailCharacterValue() {
+    public void givenNameWithSpecialCharacters_expectSpecialCharacterValue() {
         final String NAME = "%20%21%5D=%20%21%5D";
 
         Map<String, List<String>> pairs = context.parse(createStream(NAME), NAME.length());
@@ -162,7 +162,7 @@ public class URLEncodedParserTest {
     }
 
     @Test(expected = StreamInvalidException.class)
-    public void givenPercentFollowedByLowerValue() {
+    public void givenPercentFollowedByLowerValue_expectExpection() {
         final String NAME = "%/";
         context.parse(createStream(NAME), NAME.length());
     }
